@@ -13,8 +13,8 @@ import time
 
 # Page configuration
 st.set_page_config(
-    page_title="FitTrack Pro - Complete Fitness Tracker",
-    page_icon="💪",
+    page_title="FitVerse - Complete Fitness Tracker",
+    page_icon="logoo.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -227,7 +227,7 @@ if 'daily_goals' not in st.session_state:
 
 # ========================= SIDEBAR =========================
 
-st.sidebar.title("🏋️ FitTrack Pro")
+st.sidebar.image("logoo.png", width=270)
 st.sidebar.markdown("---")
 
 # Navigation
@@ -258,7 +258,7 @@ st.sidebar.metric("Water (glasses)", f"{water_glasses:.0f}")
 # ========================= PAGES =========================
 
 if page == "📊 Dashboard":
-    st.title("📊 Fitness Dashboard")
+    st.title("FitVerse - Complete Fitness Tracker")
     st.markdown(f"### Welcome back! Today is {today.strftime('%B %d, %Y')}")
     
     # Top metrics row
@@ -325,7 +325,7 @@ if page == "📊 Dashboard":
         st.plotly_chart(fig, use_container_width=True)
         
         # Macros breakdown
-        st.subheader("🥗 Macronutrients Breakdown")
+        st.subheader("Macronutrients Breakdown")
         if not today_food.empty:
             protein_total = today_food['protein'].sum()
             carbs_total = today_food['carbs'].sum()
@@ -376,7 +376,7 @@ if page == "📊 Dashboard":
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("🍽️ Recent Meals")
+        st.subheader("Recent Meals")
         if not today_food.empty:
             recent_meals = today_food[['meal', 'food_name', 'calories']].tail(5)
             st.dataframe(recent_meals, hide_index=True)
@@ -384,7 +384,7 @@ if page == "📊 Dashboard":
             st.info("No meals logged today")
     
     with col2:
-        st.subheader("💪 Recent Exercises")
+        st.subheader("Recent Exercises")
         if not today_exercise.empty:
             recent_ex = today_exercise[['activity', 'duration_min', 'calories_burned']].tail(5)
             st.dataframe(recent_ex, hide_index=True)
@@ -429,12 +429,21 @@ elif page == "🍽️ Food Log":
                                 st.write(f"**Calories:** {food['calories']} kcal")
                                 st.write(f"**Protein:** {food['protein']}g | **Carbs:** {food['carbs']}g | **Fat:** {food['fat']}g")
                             
-                            with col2:
-                                meal_type = st.selectbox(f"Meal_{idx}", 
-                                    ["Breakfast", "Lunch", "Dinner", "Snack"],
-                                    key=f"meal_{idx}")
-                                quantity = st.number_input(f"Quantity_{idx}", 
-                                    min_value=0.1, value=1.0, step=0.1, key=f"qty_{idx}")
+                                with col2:
+                                    meal_type = st.selectbox(
+                                        f"Meal_{idx}", 
+                                        ["Breakfast", "Lunch", "Dinner", "Snack"],
+                                        key=f"meal_{idx}"
+                                    )
+                                    
+                                    quantity = st.number_input(
+                                        f"Quantity_{idx}",
+                                        min_value=1,  # integer minimum
+                                        value=1,      # integer default
+                                        step=1,       # step in integers
+                                        key=f"qty_{idx}"
+                                    )
+
                             
                             with col3:
                                 if st.button(f"Add to diary", key=f"add_{idx}"):
