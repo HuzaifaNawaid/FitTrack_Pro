@@ -523,3 +523,540 @@ elif page == "🍽️ Food Log":
             else:
                 st.error("Please enter a food name")
 
+elif page == "💪 Exercise Log":
+    st.title("💪 Exercise Log")
+    
+    tab1, tab2, tab3 = st.tabs(["Log Exercise", "Today's Activities", "Exercise Library"])
+    
+    with tab1:
+        st.subheader("Log Your Exercise")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            activity = st.selectbox("Activity", [
+                'Walking (slow)', 'Walking (moderate)', 'Walking (fast)',
+                'Running (slow)', 'Running (moderate)', 'Running (fast)',
+                'Cycling (light)', 'Cycling (moderate)', 'Cycling (intense)',
+                'Swimming', 'Yoga', 'Weight Training', 'HIIT',
+                'Dancing', 'Sports (moderate)', 'Sports (intense)',
+                'Household chores', 'Gardening'
+            ])
+            
+            duration = st.number_input("Duration (minutes)", min_value=1, value=30, step=10)
+            intensity = st.select_slider("Intensity", 
+                options=['Light', 'Moderate', 'Intense', 'Very Intense'])
+        
+        with col2:
+            weight = st.session_state.user_profile['weight_kg']
+            calories_burned = calculate_calories_burned(activity, duration, weight)
+            
+            st.info(f"Estimated calories burned: **{calories_burned} kcal**")
+            st.caption(f"Based on your weight: {weight} kg")
+            
+            if st.button("Log Exercise", type="primary"):
+                new_exercise = pd.DataFrame([{
+                    'date': str(date.today()),
+                    'activity': activity,
+                    'duration_min': duration,
+                    'calories_burned': calories_burned,
+                    'intensity': intensity
+                }])
+                st.session_state.exercise_log = pd.concat([st.session_state.exercise_log, new_exercise], ignore_index=True)
+                st.success(f"Logged {activity} for {duration} minutes!")
+                st.rerun()
+    
+    with tab2:
+        st.subheader("Today's Exercise Log")
+        
+        today_exercise = st.session_state.exercise_log[st.session_state.exercise_log['date'] == str(date.today())]
+        
+        if not today_exercise.empty:
+            st.dataframe(today_exercise[['activity', 'duration_min', 'intensity', 'calories_burned']], hide_index=True)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Duration", f"{today_exercise['duration_min'].sum()} min")
+            with col2:
+                st.metric("Total Calories Burned", f"{today_exercise['calories_burned'].sum():.0f} kcal")
+            with col3:
+                st.metric("Activities Completed", f"{len(today_exercise)}")
+            
+            # Activity breakdown chart
+            fig = px.pie(today_exercise, values='calories_burned', names='activity', 
+                        title='Calories Burned by Activity')
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No exercises logged today. Start by logging an activity!")
+    
+    with tab3:
+        st.subheader("Exercise Library & Tips")
+        
+        st.write("### 🏃 Cardio Exercises")
+        cardio_tips = {
+            "Running": "Great for cardiovascular health. Start slow and gradually increase pace.",
+            "Cycling": "Low-impact exercise suitable for all fitness levels.",
+            "Swimming": "Full-body workout that's easy on joints.",
+            "HIIT": "High-intensity intervals boost metabolism for hours after workout."
+        }
+        for exercise, tip in cardio_tips.items():
+            st.write(f"**{exercise}:** {tip}")
+        
+        st.write("### 💪 Strength Training")
+        strength_tips = {
+            "Weight Training": "Build muscle and increase metabolism. Focus on form over weight.",
+            "Bodyweight Exercises": "No equipment needed. Perfect for home workouts.",
+            "Resistance Bands": "Portable and versatile for full-body workouts."
+        }
+        for exercise, tip in strength_tips.items():
+            st.write(f"**{exercise}:** {tip}")
+
+elif page == "📈 Progress Tracking":
+    st.title("📈 Progress Tracking")
+    
+    tab1, tab2, tab3, tab4 = st.tabs(["Weight Progress", "Calorie Trends", "Macro Analysis", "Water Intake"])
+    
+    with tab1:
+        st.subheader("Weight Tracking")
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            weight = st.number_input("Current Weight (kg)", min_value=30.0, value=70.0, step=0.5)
+            if st.button("Log Weight"):
+                new_weight = pd.DataFrame([{
+                    'date': str(date.today()),
+                    'weight_kg': weight
+                }])
+                st.session_state.weight_log = pd.concat([st.session_state.weight_log, new_weight], ignore_index=True)
+                st.success(f"Weight logged: {weight} kg")
+                st.rerun()
+        
+        with col2:
+            if not st.session_state.weight_log.empty:
+                # Weight trend chart
+                fig = px.line(st.session_state.weight_log, x='date', y='weight_kg', 
+                            title='Weight Progress Over Time', markers=True)
+                fig.update_layout(xaxis_title="Date", yaxis_title="Weight (kg)")
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Statistics
+                latest_weight = st.session_state.weight_log.iloc[-1]['weight_kg']
+                first_weight = st.session_state.weight_log.iloc[0]['weight_kg']
+                weight_change = latest_weight - first_weight
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Current Weight", f"{latest_weight:.1f} kg")
+                with col2:
+                    st.metric("Total Change", f"{weight_change:+.1f} kg")
+                with col3:
+                    st.metric("Starting Weight", f"{first_weight:.1f} kg")
+            else:
+                st.info("No weight data logged yet")
+    
+    with tab2:
+        st.subheader("Calorie Trends")
+        
+        if not st.session_state.food_diary.empty:
+            # Aggregate calories by date
+            daily_calories = st.session_state.food_diary.groupby('date')['calories'].sum().reset_index()
+            
+            if not st.session_state.exercise_log.empty:
+                daily_exercise = st.session_state.exercise_log.groupby('date')['calories_burned'].sum().reset_index()
+                daily_data = pd.merge(daily_calories, daily_exercise, on='date', how='outer').fillna(0)
+                daily_data['net_calories'] = daily_data['calories'] - daily_data['calories_burned']
+            else:
+                daily_data = daily_calories
+                daily_data['calories_burned'] = 0
+                daily_data['net_calories'] = daily_data['calories']
+            
+            # Calorie trend chart
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=daily_data['date'], y=daily_data['calories'],
+                                    mode='lines+markers', name='Consumed',
+                                    line=dict(color='blue', width=2)))
+            fig.add_trace(go.Scatter(x=daily_data['date'], y=daily_data['calories_burned'],
+                                    mode='lines+markers', name='Burned',
+                                    line=dict(color='red', width=2)))
+            fig.add_trace(go.Scatter(x=daily_data['date'], y=daily_data['net_calories'],
+                                    mode='lines+markers', name='Net',
+                                    line=dict(color='green', width=2)))
+            
+            fig.add_hline(y=st.session_state.daily_goals['calories'], 
+                         line_dash="dash", line_color="gray",
+                         annotation_text="Goal")
+            
+            fig.update_layout(title='Daily Calorie Trends',
+                            xaxis_title='Date',
+                            yaxis_title='Calories',
+                            hovermode='x unified')
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Statistics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                avg_consumed = daily_data['calories'].mean()
+                st.metric("Avg Daily Intake", f"{avg_consumed:.0f} kcal")
+            with col2:
+                avg_burned = daily_data['calories_burned'].mean()
+                st.metric("Avg Daily Burn", f"{avg_burned:.0f} kcal")
+            with col3:
+                avg_net = daily_data['net_calories'].mean()
+                st.metric("Avg Net Calories", f"{avg_net:.0f} kcal")
+        else:
+            st.info("No calorie data available yet")
+
+    with tab3:
+        st.subheader("Macronutrient Analysis")
+        
+        if not st.session_state.food_diary.empty:
+            # Date range selector
+            date_range = st.date_input("Select date range", 
+                                      value=(date.today() - timedelta(days=7), date.today()),
+                                      max_value=date.today())
+            
+            if len(date_range) == 2:
+                start_date, end_date = date_range
+                mask = (pd.to_datetime(st.session_state.food_diary['date']).dt.date >= start_date) & \
+                       (pd.to_datetime(st.session_state.food_diary['date']).dt.date <= end_date)
+                filtered_data = st.session_state.food_diary[mask]
+                
+                if not filtered_data.empty:
+                    # Daily macro trends
+                    daily_macros = filtered_data.groupby('date')[['protein', 'carbs', 'fat']].sum().reset_index()
+                    
+                    fig = go.Figure()
+                    fig.add_trace(go.Bar(x=daily_macros['date'], y=daily_macros['protein'],
+                                       name='Protein', marker_color='indianred'))
+                    fig.add_trace(go.Bar(x=daily_macros['date'], y=daily_macros['carbs'],
+                                       name='Carbs', marker_color='lightsalmon'))
+                    fig.add_trace(go.Bar(x=daily_macros['date'], y=daily_macros['fat'],
+                                       name='Fat', marker_color='lightgreen'))
+                    
+                    fig.update_layout(title='Daily Macronutrient Distribution',
+                                    xaxis_title='Date',
+                                    yaxis_title='Grams',
+                                    barmode='group')
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Average macro distribution pie chart
+                    avg_protein = filtered_data['protein'].sum()
+                    avg_carbs = filtered_data['carbs'].sum()
+                    avg_fat = filtered_data['fat'].sum()
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        fig_pie = go.Figure(data=[go.Pie(
+                            labels=['Protein', 'Carbs', 'Fat'],
+                            values=[avg_protein, avg_carbs, avg_fat],
+                            hole=.3
+                        )])
+                        fig_pie.update_layout(title='Overall Macro Distribution')
+                        st.plotly_chart(fig_pie, use_container_width=True)
+                    
+                    with col2:
+                        st.write("### Macro Statistics")
+                        total_days = len(daily_macros)
+                        st.write(f"**Analysis Period:** {total_days} days")
+                        st.write(f"**Avg Protein:** {avg_protein/total_days:.1f}g/day")
+                        st.write(f"**Avg Carbs:** {avg_carbs/total_days:.1f}g/day")
+                        st.write(f"**Avg Fat:** {avg_fat/total_days:.1f}g/day")
+                        
+                        # Calorie breakdown from macros
+                        protein_cal = avg_protein * 4
+                        carbs_cal = avg_carbs * 4
+                        fat_cal = avg_fat * 9
+                        total_cal = protein_cal + carbs_cal + fat_cal
+                        
+                        st.write("### Calorie Sources")
+                        st.write(f"**From Protein:** {(protein_cal/total_cal*100):.1f}%")
+                        st.write(f"**From Carbs:** {(carbs_cal/total_cal*100):.1f}%")
+                        st.write(f"**From Fat:** {(fat_cal/total_cal*100):.1f}%")
+                else:
+                    st.info("No data in selected range")
+        else:
+            st.info("No food data available yet")
+    
+    with tab4:
+        st.subheader("Water Intake Tracking")
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            water_input = st.number_input("Glasses of water", min_value=1, max_value=20, value=1)
+            if st.button("Log Water"):
+                new_water = pd.DataFrame([{
+                    'date': str(date.today()),
+                    'glasses': water_input
+                }])
+                st.session_state.water_log = pd.concat([st.session_state.water_log, new_water], ignore_index=True)
+                st.success(f"Logged {water_input} glasses of water!")
+                st.rerun()
+            
+            st.markdown("---")
+            st.info("💧 **Tip:** Aim for 8 glasses (2 liters) of water daily")
+        
+        with col2:
+            if not st.session_state.water_log.empty:
+                # Water intake trend
+                daily_water = st.session_state.water_log.groupby('date')['glasses'].sum().reset_index()
+                
+                fig = go.Figure()
+                fig.add_trace(go.Bar(x=daily_water['date'], y=daily_water['glasses'],
+                                   marker_color='lightblue'))
+                fig.add_hline(y=8, line_dash="dash", line_color="blue",
+                            annotation_text="Goal (8 glasses)")
+                
+                fig.update_layout(title='Daily Water Intake',
+                                xaxis_title='Date',
+                                yaxis_title='Glasses')
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Statistics
+                avg_water = daily_water['glasses'].mean()
+                days_met_goal = len(daily_water[daily_water['glasses'] >= 8])
+                total_days = len(daily_water)
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Average Daily", f"{avg_water:.1f} glasses")
+                with col2:
+                    st.metric("Goal Achievement", f"{days_met_goal}/{total_days} days")
+                with col3:
+                    achievement_rate = (days_met_goal/total_days*100) if total_days > 0 else 0
+                    st.metric("Success Rate", f"{achievement_rate:.0f}%")
+            else:
+                st.info("No water intake data yet. Start logging your water consumption!")
+
+elif page == "⚖️ BMI & Goals":
+    st.title("⚖️ BMI Calculator & Goal Setting")
+    
+    tab1, tab2, tab3 = st.tabs(["BMI Calculator", "Goal Setting", "Recommendations"])
+    
+    with tab1:
+        st.subheader("Calculate Your BMI")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            weight = st.number_input("Weight (kg)", min_value=30.0, max_value=300.0, 
+                                   value=float(st.session_state.user_profile['weight_kg']), step=0.5)
+            height = st.number_input("Height (cm)", min_value=100.0, max_value=250.0, 
+                                   value=float(st.session_state.user_profile['height_cm']), step=1.0)
+            
+            if st.button("Calculate BMI", type="primary"):
+                bmi = calculate_bmi(weight, height)
+                if bmi:
+                    category, emoji = get_bmi_category(bmi)
+                    
+                    st.markdown("---")
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        st.metric("Your BMI", f"{bmi:.1f}")
+                    with col_b:
+                        st.metric("Category", f"{emoji} {category}")
+                    
+                    # BMI interpretation
+                    if bmi < 18.5:
+                        st.info("**Underweight:** Consider increasing caloric intake with nutrient-dense foods.")
+                    elif bmi < 25:
+                        st.success("**Normal weight:** Maintain your current healthy lifestyle!")
+                    elif bmi < 30:
+                        st.warning("**Overweight:** Consider a balanced diet and regular exercise.")
+                    else:
+                        st.error("**Obese:** Consult with a healthcare provider for a personalized plan.")
+        
+        with col2:
+            # BMI Chart visualization
+            fig = go.Figure()
+            
+            # BMI categories
+            categories = ['Underweight', 'Normal', 'Overweight', 'Obese']
+            ranges = [18.5, 25, 30, 40]
+            colors = ['lightblue', 'lightgreen', 'yellow', 'red']
+            
+            # Create BMI scale
+            for i, (cat, color) in enumerate(zip(categories, colors)):
+                fig.add_trace(go.Bar(
+                    x=[ranges[i] if i < len(ranges) else 40],
+                    y=[cat],
+                    orientation='h',
+                    marker=dict(color=color),
+                    showlegend=False,
+                    hovertemplate=f'{cat}: BMI {ranges[i-1] if i > 0 else 0}-{ranges[i] if i < len(ranges) else "40+"}<extra></extra>'
+                ))
+            
+            # Add user's BMI marker if calculated
+            if 'bmi' in locals():
+                fig.add_vline(x=bmi, line_dash="dash", line_color="black",
+                            annotation_text=f"Your BMI: {bmi:.1f}")
+            
+            fig.update_layout(
+                title="BMI Scale",
+                xaxis_title="BMI Value",
+                yaxis_title="Category",
+                barmode='stack',
+                height=300
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Ideal weight calculator
+            st.write("### Ideal Weight Range")
+            ideal_bmi_min = 18.5
+            ideal_bmi_max = 24.9
+            height_m = height / 100
+            ideal_weight_min = ideal_bmi_min * (height_m ** 2)
+            ideal_weight_max = ideal_bmi_max * (height_m ** 2)
+            
+            st.info(f"For your height ({height} cm), ideal weight range is: **{ideal_weight_min:.1f} - {ideal_weight_max:.1f} kg**")
+    
+    with tab2:
+        st.subheader("Set Your Fitness Goals")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("### Personal Information")
+            age = st.number_input("Age", min_value=10, max_value=100, 
+                                value=st.session_state.user_profile['age'])
+            gender = st.selectbox("Gender", ["Male", "Female"],
+                                index=0 if st.session_state.user_profile['gender'] == "Male" else 1)
+            activity = st.selectbox("Activity Level", 
+                                  ['Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active', 'Extra Active'],
+                                  index=['Sedentary', 'Lightly Active', 'Moderately Active', 'Very Active', 'Extra Active']
+                                  .index(st.session_state.user_profile['activity_level']))
+            goal = st.selectbox("Fitness Goal",
+                              ['Lose Weight', 'Maintain Weight', 'Gain Weight'],
+                              index=['Lose Weight', 'Maintain Weight', 'Gain Weight']
+                              .index(st.session_state.user_profile['goal']))
+            
+            if st.button("Update Profile & Calculate Goals"):
+                st.session_state.user_profile.update({
+                    'age': age,
+                    'gender': gender,
+                    'activity_level': activity,
+                    'goal': goal
+                })
+                
+                # Calculate BMR and TDEE
+                bmr = calculate_bmr(st.session_state.user_profile['weight_kg'],
+                                  st.session_state.user_profile['height_cm'],
+                                  age, gender)
+                tdee = calculate_tdee(bmr, activity)
+                
+                # Adjust for goal
+                if goal == 'Lose Weight':
+                    target_calories = tdee - 500  # 500 calorie deficit
+                elif goal == 'Gain Weight':
+                    target_calories = tdee + 500  # 500 calorie surplus
+                else:
+                    target_calories = tdee
+                
+                # Calculate macro split (40% carbs, 30% protein, 30% fat for balanced diet)
+                protein_g = (target_calories * 0.30) / 4
+                carbs_g = (target_calories * 0.40) / 4
+                fat_g = (target_calories * 0.30) / 9
+                
+                st.session_state.daily_goals.update({
+                    'calories': round(target_calories),
+                    'protein': round(protein_g),
+                    'carbs': round(carbs_g),
+                    'fat': round(fat_g)
+                })
+                
+                st.success("Goals updated successfully!")
+                st.rerun()
+        
+        with col2:
+            st.write("### Current Daily Goals")
+            
+            calories = st.number_input("Calories", value=st.session_state.daily_goals['calories'], step=50)
+            protein = st.number_input("Protein (g)", value=st.session_state.daily_goals['protein'], step=5)
+            carbs = st.number_input("Carbs (g)", value=st.session_state.daily_goals['carbs'], step=10)
+            fat = st.number_input("Fat (g)", value=st.session_state.daily_goals['fat'], step=5)
+            fiber = st.number_input("Fiber (g)", value=st.session_state.daily_goals['fiber'], step=5)
+            water = st.number_input("Water (glasses)", value=st.session_state.daily_goals['water'], step=1)
+            
+            if st.button("Save Custom Goals"):
+                st.session_state.daily_goals.update({
+                    'calories': calories,
+                    'protein': protein,
+                    'carbs': carbs,
+                    'fat': fat,
+                    'fiber': fiber,
+                    'water': water
+                })
+                st.success("Custom goals saved!")
+                st.rerun()
+    
+    with tab3:
+        st.subheader("Personalized Recommendations")
+        
+        # Calculate BMR and TDEE for recommendations
+        bmr = calculate_bmr(st.session_state.user_profile['weight_kg'],
+                          st.session_state.user_profile['height_cm'],
+                          st.session_state.user_profile['age'],
+                          st.session_state.user_profile['gender'])
+        tdee = calculate_tdee(bmr, st.session_state.user_profile['activity_level'])
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("### 📊 Your Metabolic Profile")
+            st.metric("Basal Metabolic Rate (BMR)", f"{bmr:.0f} kcal/day")
+            st.metric("Total Daily Energy Expenditure (TDEE)", f"{tdee:.0f} kcal/day")
+            
+            st.write("### 🎯 Goal-Based Recommendations")
+            goal = st.session_state.user_profile['goal']
+            
+            if goal == 'Lose Weight':
+                st.info("""
+                **Weight Loss Strategy:**
+                - Target: 500-750 calorie deficit daily
+                - Expected loss: 0.5-0.75 kg per week
+                - Focus on high-protein, high-fiber foods
+                - Include strength training to preserve muscle
+                """)
+            elif goal == 'Gain Weight':
+                st.info("""
+                **Weight Gain Strategy:**
+                - Target: 300-500 calorie surplus daily
+                - Expected gain: 0.25-0.5 kg per week
+                - Focus on nutrient-dense foods
+                - Progressive overload in strength training
+                """)
+            else:
+                st.info("""
+                **Weight Maintenance Strategy:**
+                - Maintain current calorie intake
+                - Balance macronutrients
+                - Focus on food quality
+                - Regular exercise for health benefits
+                """)
+        
+        with col2:
+            st.write("### 🍽️ Meal Timing Suggestions")
+            meal_distribution = {
+                'Breakfast': 25,
+                'Morning Snack': 10,
+                'Lunch': 30,
+                'Afternoon Snack': 10,
+                'Dinner': 25
+            }
+            
+            total_cal = st.session_state.daily_goals['calories']
+            for meal, percentage in meal_distribution.items():
+                cal_per_meal = (percentage / 100) * total_cal
+                st.write(f"**{meal}:** {cal_per_meal:.0f} kcal ({percentage}%)")
+            
+            st.write("### 💧 Hydration Guidelines")
+            water_needs = st.session_state.user_profile['weight_kg'] * 0.033
+            st.info(f"""
+            **Recommended Water Intake:**
+            - Minimum: {water_needs:.1f} liters/day
+            - Active days: {water_needs * 1.5:.1f} liters/day
+            - Hot weather: Add 500ml extra
+            - During exercise: 200ml every 20 minutes
+            """)
+
