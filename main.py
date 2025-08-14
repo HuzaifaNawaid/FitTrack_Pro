@@ -811,10 +811,10 @@ else:
         if time.time() - st.session_state.last_autosave > 300:  # 5 minutes
             if save_user_data_to_firestore(st.session_state.user_id):
                 st.session_state.last_autosave = time.time()
-                st.write("🔄 Auto-saved")
+                st.write("Auto-saved")
     
     # Sign out button at very bottom
-    if st.sidebar.button("🚪 Sign Out"):
+    if st.sidebar.button("Sign Out"):
         # Save data before signing out
         save_user_data_to_firestore(st.session_state.user_id)
         
@@ -1002,7 +1002,7 @@ if not st.session_state.authenticated:
     # Hero section with dark theme
     st.markdown("""
     <div class="hero">
-        <div class="hero-title">FITVERSE</div>
+        <div class="hero-title">FitVerse</div>
         <div class="hero-subtitle">Your Complete Fitness Tracking Companion</div>
         <p style="font-size:1.1rem; max-width:700px; margin:0 auto 1.5rem; color:#a0aec0;">
             Transform your fitness journey with advanced tracking and personalized insights
@@ -1066,7 +1066,7 @@ if not st.session_state.authenticated:
     with col1:
         st.markdown("""
         <div class="stats-container">
-            <div class="stats-number">95%</div>
+            <div class="stats-number">90%</div>
             <div class="stats-text">Users achieve fitness goals faster</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1105,36 +1105,13 @@ if not st.session_state.authenticated:
                 <div class="step-desc">{desc}</div>
             </div>
             """, unsafe_allow_html=True)
-    
-    # Security section with dark theme
-    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-title">Your Security is Our Priority</div>', unsafe_allow_html=True)
-    st.markdown("""
-    <div class="security-section">
-        <div style="display:flex; align-items:center; gap:1.5rem">
-            <div style="flex:1">
-                <h3 style="color:#e2e8f0; margin-top:0">Enterprise-grade Security</h3>
-                <ul style="color:#a0aec0; padding-left:1.5rem">
-                    <li>Military-grade AES-256 encryption</li>
-                    <li>Regular security audits and penetration testing</li>
-                    <li>Breached password protection with HIBP integration</li>
-                    <li>Secure cloud storage with Google Firebase</li>
-                    <li>GDPR-compliant data handling</li>
-                </ul>
-            </div>
-            <div style="flex:1; text-align:center">
-                <div style="font-size:5rem; line-height:1; color:#4a5568">🔐</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
+       
     # Final CTA with dark theme
     st.markdown("""
     <div class="final-cta">
         <div class="section-title">Ready to Transform Your Fitness Journey?</div>
         <p style="font-size:1.2rem; margin-bottom:1.5rem; color:#a0aec0">
-            Join thousands of users achieving their fitness goals with FitVerse
+            "Step into FitVerse - where thousands are smashing their fitness goals every day!”
         </p>
     </div>
     """, unsafe_allow_html=True)
