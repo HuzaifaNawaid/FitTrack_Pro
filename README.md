@@ -77,4 +77,5 @@ This project is distributed under the **MIT License**. See `LICENSE` for more in
 ## 📞 Contact
 
 **Huzaifa Nawaid**  
-Email: huzaifanawaid.developer@gmail.com  
+Email: huzaifanawaid.developer@gmail.com 
+Live Project: https://fitverse.streamlit.app/
