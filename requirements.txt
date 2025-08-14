@@ -1,7 +1,8 @@
-streamlit
-pandas
-numpy
-seaborn
-matplotlib
-plotly
-requests
+firebase-admin>=7.1.0
+matplotlib>=3.10.5
+numpy>=2.3.2
+pandas>=2.3.1
+plotly>=6.2.0
+requests>=2.32.4
+seaborn>=0.13.2
+streamlit>=1.48.0
