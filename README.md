@@ -5,6 +5,8 @@
 
 FitVerse is a comprehensive fitness tracking application designed to help users monitor nutrition, exercise, weight progress, and water intake. With advanced analytics, goal setting, and personalized recommendations, FitVerse empowers users to achieve their fitness goals effectively.
 
+Live Project: https://fitverse.streamlit.app/
+
 ---
 
 ## 🌟 Key Features
@@ -77,5 +79,4 @@ This project is distributed under the **MIT License**. See `LICENSE` for more in
 ## 📞 Contact
 
 **Huzaifa Nawaid**  
-Email: huzaifanawaid.developer@gmail.com 
-Live Project: https://fitverse.streamlit.app/
+Email: nawaidhuzaifa@gmail.com
